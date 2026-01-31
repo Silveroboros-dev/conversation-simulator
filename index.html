@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Simulator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00d4ff;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            border: 2px solid #00d4ff;
+            background: transparent;
+            color: #00d4ff;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+
+        .mode-btn:hover {
+            background: #00d4ff33;
+        }
+
+        .panel {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+            font-size: 18px;
+        }
+
+        .persona-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .persona-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .persona-card:hover {
+            border-color: #00d4ff;
+        }
+
+        .persona-card.selected {
+            border-color: #00d4ff;
+            background: #1a4a7a;
+        }
+
+        .persona-card h3 {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .persona-card p {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #0f3460;
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            background: #1e4d2b;
+        }
+
+        .message.role-check {
+            border-left: 3px solid #ff6b6b;
+        }
+
+        .message-label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background: #0f3460;
+            color: #eee;
+            font-size: 14px;
+        }
+
+        .input-area input:focus {
+            outline: 2px solid #00d4ff;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+
+        .btn-secondary {
+            background: #0f3460;
+            color: #eee;
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: #fff;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .role-responses {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .role-responses h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+        }
+
+        .role-response-item {
+            background: #1a1a2e;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .role-response-item .turn {
+            color: #888;
+            font-size: 11px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            color: #888;
+            font-style: italic;
+        }
+
+        .auto-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .auto-controls label {
+            font-size: 14px;
+        }
+
+        .auto-controls input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            background: #0f3460;
+            color: #eee;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Conversation Simulator</h1>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="interactive">Interactive Mode</button>
+            <button class="mode-btn" data-mode="automated">Automated Mode</button>
+        </div>
+
+        <div class="panel">
+            <h2>Select Persona</h2>
+            <div class="persona-grid" id="personaGrid"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Conversation</h2>
+
+            <div class="controls">
+                <button class="btn btn-primary" id="startBtn">Start Session</button>
+                <button class="btn btn-danger" id="endBtn" disabled>End Session</button>
+                <button class="btn btn-secondary" id="roleCheckBtn" disabled>Ask Role Check</button>
+            </div>
+
+            <div class="auto-controls" id="autoControls">
+                <label>Turns:</label>
+                <input type="number" id="turnCount" value="3" min="1" max="10">
+                <button class="btn btn-primary" id="runAutoBtn" disabled>Run Simulation</button>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="status">Select a persona and start a session</div>
+            </div>
+
+            <div class="input-area" id="inputArea">
+                <input type="text" id="messageInput" placeholder="Type your message..." disabled>
+                <button class="btn btn-primary" id="sendBtn" disabled>Send</button>
+            </div>
+
+            <div class="role-responses" id="roleResponses">
+                <h3>Role Check Responses</h3>
+                <div id="roleResponsesList">
+                    <div class="status">No role checks yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let config = null;
+        let sessionId = null;
+        let selectedPersona = null;
+        let currentMode = 'interactive';
+
+        // DOM elements
+        const personaGrid = document.getElementById('personaGrid');
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const startBtn = document.getElementById('startBtn');
+        const endBtn = document.getElementById('endBtn');
+        const roleCheckBtn = document.getElementById('roleCheckBtn');
+        const roleResponsesList = document.getElementById('roleResponsesList');
+        const autoControls = document.getElementById('autoControls');
+        const runAutoBtn = document.getElementById('runAutoBtn');
+        const turnCount = document.getElementById('turnCount');
+        const inputArea = document.getElementById('inputArea');
+
+        // Initialize
+        async function init() {
+            const response = await fetch(`${API_BASE}/api/config`);
+            config = await response.json();
+            renderPersonas();
+            setupEventListeners();
+        }
+
+        function renderPersonas() {
+            personaGrid.innerHTML = config.personas.map(p => `
+                <div class="persona-card" data-id="${p.id}">
+                    <h3>${p.name}</h3>
+                    <p>${p.description}</p>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.persona-card').forEach(card => {
+                card.addEventListener('click', () => selectPersona(card.dataset.id));
+            });
+        }
+
+        function selectPersona(id) {
+            selectedPersona = config.personas.find(p => p.id === id);
+            document.querySelectorAll('.persona-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.id === id);
+            });
+        }
+
+        function setupEventListeners() {
+            // Mode toggle
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentMode = btn.dataset.mode;
+                    updateModeUI();
+                });
+            });
+
+            startBtn.addEventListener('click', startSession);
+            endBtn.addEventListener('click', endSession);
+            sendBtn.addEventListener('click', sendMessage);
+            roleCheckBtn.addEventListener('click', askRoleCheck);
+            runAutoBtn.addEventListener('click', runAutomatedSimulation);
+
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !sendBtn.disabled) {
+                    sendMessage();
+                }
+            });
+        }
+
+        function updateModeUI() {
+            if (currentMode === 'automated') {
+                autoControls.classList.remove('hidden');
+                inputArea.classList.add('hidden');
+            } else {
+                autoControls.classList.add('hidden');
+                inputArea.classList.remove('hidden');
+            }
+        }
+
+        async function startSession() {
+            if (!selectedPersona) {
+                alert('Please select a persona first');
+                return;
+            }
+
+            const response = await fetch(`${API_BASE}/api/session/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ persona_id: selectedPersona.id })
+            });
+
+            const data = await response.json();
+            sessionId = data.session_id;
+
+            chatContainer.innerHTML = '';
+            roleResponsesList.innerHTML = '<div class="status">No role checks yet</div>';
+
+            startBtn.disabled = true;
+            endBtn.disabled = false;
+            roleCheckBtn.disabled = false;
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            runAutoBtn.disabled = false;
+
+            addMessage('system', `Session started with ${selectedPersona.name}`);
+        }
+
+        async function endSession() {
+            if (!sessionId) return;
+
+            const response = await fetch(`${API_BASE}/api/session/end`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+
+            sessionId = null;
+            startBtn.disabled = false;
+            endBtn.disabled = true;
+            roleCheckBtn.disabled = true;
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+            runAutoBtn.disabled = true;
+
+            addMessage('system', 'Session ended');
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || !sessionId) return;
+
+            messageInput.value = '';
+            addMessage('user', message);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: message,
+                        is_role_check: false
+                    })
+                });
+
+                const data = await response.json();
+                addMessage('assistant', data.response);
+            } catch (error) {
+                addMessage('system', `Error: ${error.message}`);
+            }
+        }
+
+        async function askRoleCheck() {
+            if (!sessionId) return;
+
+            const question = config.role_check_question;
+            addMessage('user', question, true);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: question,
+                        is_role_check: true
+                    })
+                });
+
+                const data = await response.json();
+                addMessage('assistant', data.response, true);
+                updateRoleResponses(data.summary.role_responses);
+            } catch (error) {
+                addMessage('system', `Error: ${error.message}`);
+            }
+        }
+
+        async function runAutomatedSimulation() {
+            if (!sessionId || !selectedPersona) return;
+
+            runAutoBtn.disabled = true;
+            const turns = parseInt(turnCount.value);
+
+            // Send initial message
+            const starter = selectedPersona.starters[Math.floor(Math.random() * selectedPersona.starters.length)];
+            addMessage('user', starter);
+
+            try {
+                let response = await fetch(`${API_BASE}/api/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: starter,
+                        is_role_check: false
+                    })
+                });
+                let data = await response.json();
+                addMessage('assistant', data.response);
+
+                // Additional turns with role checks
+                for (let i = 1; i < turns; i++) {
+                    await new Promise(r => setTimeout(r, 1000)); // Small delay
+
+                    const followUp = config.follow_ups[Math.floor(Math.random() * config.follow_ups.length)];
+                    const messageWithCheck = `${followUp}\n\nAlso, ${config.role_check_question}`;
+
+                    addMessage('user', messageWithCheck, true);
+
+                    response = await fetch(`${API_BASE}/api/message`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: sessionId,
+                            message: messageWithCheck,
+                            is_role_check: true
+                        })
+                    });
+                    data = await response.json();
+                    addMessage('assistant', data.response, true);
+                    updateRoleResponses(data.summary.role_responses);
+                }
+
+                // Final role check
+                await new Promise(r => setTimeout(r, 1000));
+                await askRoleCheck();
+
+            } catch (error) {
+                addMessage('system', `Error: ${error.message}`);
+            }
+
+            runAutoBtn.disabled = false;
+        }
+
+        function addMessage(role, content, isRoleCheck = false) {
+            const div = document.createElement('div');
+            div.className = `message ${role}${isRoleCheck ? ' role-check' : ''}`;
+
+            const label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = role === 'user' ? (selectedPersona?.name || 'User') :
+                               role === 'assistant' ? 'Assistant' : 'System';
+            if (isRoleCheck) label.textContent += ' (Role Check)';
+
+            const text = document.createElement('div');
+            text.textContent = content;
+
+            div.appendChild(label);
+            div.appendChild(text);
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function updateRoleResponses(responses) {
+            if (!responses || responses.length === 0) {
+                roleResponsesList.innerHTML = '<div class="status">No role checks yet</div>';
+                return;
+            }
+
+            roleResponsesList.innerHTML = responses.map((r, i) => `
+                <div class="role-response-item">
+                    <div class="turn">Turn ${r.turn}</div>
+                    <div>${r.response.substring(0, 200)}${r.response.length > 200 ? '...' : ''}</div>
+                </div>
+            `).join('');
+        }
+
+        init();
+    </script>
+</body>
+</html>
